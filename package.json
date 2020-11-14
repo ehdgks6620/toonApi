@@ -1,0 +1,29 @@
+{
+  "name": "toonapi2",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "nodemon ./bin/www"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.772.0",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "jade": "~1.11.0",
+    "jsonwebtoken": "^8.5.1",
+    "koa": "^2.13.0",
+    "koa-multer": "^1.0.2",
+    "koa-router": "^9.4.0",
+    "mongoose": "^5.10.9",
+    "mongoose-auto-increment": "^5.0.1",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.2",
+    "multer-s3": "^2.9.0",
+    "nunjucks": "^3.2.2",
+    "path": "^0.12.7",
+    "sequelize": "^6.3.5"
+  }
+}
