@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const toonSchema = new Schema({
-  id: { type: String, require: true },
+  id: { type: Number, require: true },
+  nickname: { type: String, require: true },
   title: String,
   data: String,
   num: { type: Number, require: true },

@@ -8,6 +8,7 @@ const AWS = require("aws-sdk");
 const multerS3 = require("multer-s3");
 const path = require("path");
 const fs = require("fs");
+const { Schema } = require("mongoose");
 AWS.config.loadFromPath(__dirname + "/../config/awsconfig.json");
 
 //var s3Bucket = new AWS.S3({ params: { Bucket: "toonmaker-s3" } });
@@ -51,10 +52,11 @@ router.post("/image", upload.single("file"), (req, res, next) => {
     });
 
     const toon = new Toon({
-      id: "donghan",
+      id: Number(req.body.id),
       title: req.body.title,
       data: `https://toonmaker-s3.s3.ap-northeast-2.amazonaws.com/${req.body.name}.jpg`,
       num: Number(req.body.num),
+      nickname: req.body.nickname,
     });
     toon
       .save()
@@ -70,8 +72,51 @@ router.post("/image", upload.single("file"), (req, res, next) => {
     res.json({ result: 0 });
   }
 });
+//Scene S3에 넣기 & DB에 넣기
+router.post("/createScene", async (req, res) => {
+  try {
+    buf = Buffer.from(
+      req.body.file.replace(/^data:image\/\w+;base64,/, ""),
+      "base64"
+    );
+    var data = {
+      Key: `${req.body.name}.jpg`,
+      Body: buf,
+      ContentEncoding: "base64",
+      ContentType: "image/jpeg",
+    };
+    s3.putObject(data, function (err, data) {
+      if (err) {
+        console.log(err);
+        console.log("Error uploading data: ", data);
+      } else {
+        console.log("successfully uploaded the image!");
+      }
+    });
+    const Scene = new Scene({
+      image_url: `https://toonmaker-s3.s3.ap-northeast-2.amazonaws.com/${req.body.image}.jpg`,
+      background_url: `https://toonmaker-s3.s3.ap-northeast-2.amazonaws.com/${req.body.background}.jpg`,
+      sticker_url: `https://toonmaker-s3.s3.ap-northeast-2.amazonaws.com/${req.body.sticker}.jpg`,
+      User: req.body.user_id, //해결 해야 할 부분
+    });
+    Scene.save()
+      .then(() => {
+        console.log("success");
+        res.json({ result: 1 });
+      })
+      .catch((e) => {
+        console.log(e);
+        res.json({ result: 0 });
+      });
+    //scene _id 생김 -> user_id에 맞는 User 찾아서 scene id 넣어주기
+    let user = User.findeOneByUserid(req.body.user_id);
+    user.Scenes.push(Scene);
+  } catch (err) {
+    res.json({ result: 0 });
+  }
+});
 
-router.get("/showAllToon", async (req, res) => {
+router.get("/showMainToon", async (req, res) => {
   try {
     const allToon = await Toon.find({ num: 0 }).limit(6).sort("view");
     res.json({ result: 1, allToon: allToon });
@@ -80,10 +125,42 @@ router.get("/showAllToon", async (req, res) => {
     res.json({ result: 0 });
   }
 });
+
+router.get("/showAllToon", async (req, res) => {
+  try {
+    const allToon = await Toon.find({ num: 0 }).sort("view");
+    res.json({ result: 1, allToon: allToon });
+  } catch (e) {
+    console.log(e);
+    res.json({ result: 0 });
+  }
+});
+
+router.post("/showMyToon", async (req, res) => {
+  try {
+    const allToon = await Toon.find({ num: 0, id: req.body.id }).sort("view");
+    res.json({ result: 1, allToon: allToon });
+  } catch (e) {
+    console.log(e);
+    res.json({ result: 0 });
+  }
+});
+
+router.delete("/deleteToon/:title", async (req, res) => {
+  try {
+    Toon.remove({ title: req.params.title }, function (err, output) {
+      if (err) return res.status(500).json({ error: "database failure" });
+    });
+    res.json({ result: 1 });
+  } catch (e) {
+    res.json({ result: 0 });
+  }
+});
+
 router.post("/createToon", async (req, res) => {
   try {
     console.log(req.body.scene);
-    const scene = new Scene({
+    const toon = new Scene({
       Scene_id: req.body.scene,
       User_id: req.body.user,
       image_url: "asdfsdf",
@@ -105,47 +182,16 @@ router.post("/createToon", async (req, res) => {
   }
 });
 
-router.post("/showProfile1/:id", async (req, res) => {
-  //개인정보에서 제작자 정보 불러오기=id는 number
-  try {
-    console.log("success");
-    const profile = await User.find({ id: Number(req.params.id) });
-    res.json({ result: 1, profile: profile });
-  } catch (e) {
-    console.log(e);
-    res.json({ result: 0 });
-  }
-});
-
-router.post("/showProfile2/:id", async (req, res) => {
-  //개인정보에서 제작 웹툰 정보 불러오기-id는 string
-  try {
-    console.log("success");
-    const toonProfile = await Toon.find({ id: req.params.id });
-    res.json({ result: 1, toonproFile: toonProfile });
-  } catch (e) {
-    console.log(e);
-    res.json({ result: 0 });
-  }
-});
-
+//클릭한 웹툰 페이지 정보 불러오기
 router.get("/showOneToon/:title", async (req, res) => {
-  //클릭한 웹툰 페이지 정보 불러오기
   try {
     console.log("success");
-    const oneToon = await Toon.find({ title: req.params.title });
+    const oneToon = await Toon.find({ title: req.params.title }).sort("num");
     res.json({
       result: 1,
       oneToon: oneToon,
     });
   } catch (e) {}
-});
-
-router.get("/:id", (req, res) => {
-  Profile.find({ id: req.params.id }, (err, profile) => {
-    console.log(profile);
-    res.send("a");
-  });
 });
 
 module.exports = router;

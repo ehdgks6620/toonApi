@@ -2,9 +2,19 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const Webtoon = new Schema({
-  Webtoon_id: { type: Number, required: true },
-  User_id: { type: Number, required: true },
-  Webtooncol: { type: String, required: true },
+  title: { type: String },
+  date: { type: Date, default: Date.now },
+  view: { type: Number, default: 0 },
+  Scene: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Scene",
+    },
+  ],
+  User: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
 });
 
 module.exports = mongoose.model("Webtoon", Webtoon);

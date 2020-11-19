@@ -2,6 +2,7 @@ let express = require("express");
 const router = express.Router();
 const KakaoLogin = require("../mongo/KakaoLogin.js");
 const User = require("../mongo/User.js");
+const { route } = require("./index.js");
 
 router.post("/save", async function (req, res, next) {
   try {
@@ -27,8 +28,9 @@ router.post("/save", async function (req, res, next) {
             .then(() => {
               user
                 .save()
-                .then(() => {
+                .then(async () => {
                   console.log("success");
+                  await user.save();
                 })
                 .catch((err) => {
                   console.log(err);
@@ -52,6 +54,18 @@ router.post("/save", async function (req, res, next) {
     console.log(err);
     res.json({ result: 0 });
   }
+});
+
+router.get("/getProfile/:id", async (req, res) => {
+  try {
+    const kakao = await KakaoLogin.findOne({ id: req.params.id });
+    const user = await User.findOne({ id: req.params.id });
+
+    res.json({
+      kakao: kakao,
+      user: user,
+    });
+  } catch (err) {}
 });
 
 module.exports = router;
